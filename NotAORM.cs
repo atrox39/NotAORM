@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 
 namespace NotAORM
 {
@@ -46,12 +47,26 @@ namespace NotAORM
       }
     }
 
+    private void CloseOnCommandExecution(SqlConnection conn)
+    {
+      if (conn.State == ConnectionState.Open)
+      {
+        conn.Close();
+        Thread.Sleep(10);
+        conn.Open();
+      }
+      else if (conn.State == ConnectionState.Closed)
+      {
+        conn.Open();
+      }
+    }
+
     private void ExecuteSql(Action<SqlDataAdapter> Execute, string query, CommandType type = CommandType.Text, List<SqlParameter> parameters = null)
     {
       bool active = false;
       try
       {
-        _sqlConnection.Open();
+        CloseOnCommandExecution(_sqlConnection);
         active = true;
         using (SqlCommand cmd = _sqlConnection.CreateCommand())
         {
@@ -95,7 +110,7 @@ namespace NotAORM
       bool active = false;
       try
       {
-        _sqlConnection.Open();
+        CloseOnCommandExecution(_sqlConnection);
         active = true;
         using (SqlCommand cmd = _sqlConnection.CreateCommand())
         {
@@ -147,7 +162,6 @@ namespace NotAORM
       TA result = Activator.CreateInstance<TA>();
       bool isList = typeof(TA).IsGenericType && typeof(TA).GetGenericTypeDefinition() == typeof(List<>);
       IList list = isList ? (IList)Activator.CreateInstance(typeof(TA)) : null;
-      bool connectionOpened = false;
       try
       {
         ExecuteSql((adapter) =>
@@ -182,10 +196,6 @@ namespace NotAORM
       {
         throw new Exception("An error occurred while executing Raw<TA>", ex);
       }
-      finally
-      {
-        if (connectionOpened) _sqlConnection?.Close();
-      }
       return isList ? (TA)list : result;
     }
 
@@ -195,7 +205,7 @@ namespace NotAORM
       int result = 0;
       try
       {
-        _sqlConnection.Open();
+        CloseOnCommandExecution(_sqlConnection);
         active = true;
         using (SqlCommand cmd = _sqlConnection.CreateCommand())
         {
