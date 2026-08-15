@@ -55,6 +55,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".github\workflows\build.yml" />
     <None Include="CHANGELOG.md" />
     <None Include="NotAORM.pfx" />
     <None Include="README.md" />
