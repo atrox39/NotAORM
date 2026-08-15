@@ -24,11 +24,11 @@ jobs:
       - name: Setup NuGet
         uses: nuget/setup-nuget@v2
 
-      # PASO CLAVE: instalar los assemblies de referencia de .NET 4.0
+      # Instalar assemblies de referencia de .NET 4.0 (con /Y para sobrescritura)
       - name: Install .NET 4.0 Targeting Pack via NuGet
         run: |
           nuget install Microsoft.NETFramework.ReferenceAssemblies.net40 -Version 1.0.3 -OutputDirectory c:\refs
-          xcopy /E /I c:\refs\Microsoft.NETFramework.ReferenceAssemblies.net40.1.0.3\build\.NETFramework "C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework"
+          xcopy /E /I /Y c:\refs\Microsoft.NETFramework.ReferenceAssemblies.net40.1.0.3\build\.NETFramework "C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework"
 
       - name: Restore NuGet packages
         run: nuget restore NotAORM.sln
