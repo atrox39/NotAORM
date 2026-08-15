@@ -24,17 +24,25 @@ jobs:
       - name: Setup NuGet
         uses: nuget/setup-nuget@v2
 
-      # Instalar assemblies de referencia de .NET 4.0 (con /Y para sobrescritura)
       - name: Install .NET 4.0 Targeting Pack via NuGet
         run: |
           nuget install Microsoft.NETFramework.ReferenceAssemblies.net40 -Version 1.0.3 -OutputDirectory c:\refs
           xcopy /E /I /Y c:\refs\Microsoft.NETFramework.ReferenceAssemblies.net40.1.0.3\build\.NETFramework "C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework"
 
-      # Decodificar PFX y colocarlo en la raíz del proyecto (para todos los builds)
       - name: Decode PFX certificate
         run: |
           $pfxBytes = [Convert]::FromBase64String("${{ secrets.PFX_BASE64 }}")
           [IO.File]::WriteAllBytes("${{ github.workspace }}\NotAORM.pfx", $pfxBytes)
+        shell: pwsh
+
+      - name: Import PFX into Strong Name CSP
+        run: |
+          # Crear archivo temporal con la contraseña
+          echo "${{ secrets.PFX_PASSWORD }}" > password.txt
+          # Importar el PFX al contenedor de claves generado por Visual Studio
+          sn -i "${{ github.workspace }}\NotAORM.pfx" VS_KEY_16562155F0203F83 -p password.txt
+          # Eliminar el archivo de contraseña
+          del password.txt
         shell: pwsh
 
       - name: Restore NuGet packages
@@ -51,7 +59,6 @@ jobs:
           if (Test-Path NotAORM\bin\Release\NotAORM.xml) { copy NotAORM\bin\Release\NotAORM.xml staging\ }
         shell: pwsh
 
-      # Firma digital solo para tags (opcional, ya que el PFX ya está)
       - name: Sign the DLL (only on tags)
         if: startsWith(github.ref, 'refs/tags/')
         run: |
