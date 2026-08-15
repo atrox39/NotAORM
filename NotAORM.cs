@@ -49,9 +49,15 @@ namespace NotAORM
         private readonly SqlConnection _sqlConnection;
 
         /// <summary>
+        /// (Obsolete) Gets the underlying SqlConnection instance. Use the Connection property instead.
+        /// </summary>
+        [Obsolete("This property is deprecated and will be removed in a future version. Use the 'Connection' property or the 'GetConnection()' method instead.")]
+        public SqlConnection Instance => _sqlConnection;
+
+        /// <summary>
         /// Gets the underlying SqlConnection instance.
         /// </summary>
-        public SqlConnection Instance => _sqlConnection;
+        public SqlConnection Connection => _sqlConnection;
 
         /// <summary>
         /// Initializes a new instance using the [Database] attribute (obsolete).
