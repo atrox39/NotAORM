@@ -30,6 +30,13 @@ jobs:
           nuget install Microsoft.NETFramework.ReferenceAssemblies.net40 -Version 1.0.3 -OutputDirectory c:\refs
           xcopy /E /I /Y c:\refs\Microsoft.NETFramework.ReferenceAssemblies.net40.1.0.3\build\.NETFramework "C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework"
 
+      # Decodificar PFX y colocarlo en la raíz del proyecto (para todos los builds)
+      - name: Decode PFX certificate
+        run: |
+          $pfxBytes = [Convert]::FromBase64String("${{ secrets.PFX_BASE64 }}")
+          [IO.File]::WriteAllBytes("${{ github.workspace }}\NotAORM.pfx", $pfxBytes)
+        shell: pwsh
+
       - name: Restore NuGet packages
         run: nuget restore NotAORM.sln
 
@@ -44,14 +51,7 @@ jobs:
           if (Test-Path NotAORM\bin\Release\NotAORM.xml) { copy NotAORM\bin\Release\NotAORM.xml staging\ }
         shell: pwsh
 
-      # Firma digital solo para tags
-      - name: Decode PFX certificate (only on tags)
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          $pfxBytes = [Convert]::FromBase64String("${{ secrets.PFX_BASE64 }}")
-          [IO.File]::WriteAllBytes("${{ runner.temp }}\NotAORM.pfx", $pfxBytes)
-        shell: pwsh
-
+      # Firma digital solo para tags (opcional, ya que el PFX ya está)
       - name: Sign the DLL (only on tags)
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -59,7 +59,7 @@ jobs:
           if (-not $signtool) {
             $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86\signtool.exe"
           }
-          & $signtool sign /f "${{ runner.temp }}\NotAORM.pfx" /p "${{ secrets.PFX_PASSWORD }}" /fd SHA256 /t http://timestamp.digicert.com staging\NotAORM.dll
+          & $signtool sign /f "${{ github.workspace }}\NotAORM.pfx" /p "${{ secrets.PFX_PASSWORD }}" /fd SHA256 /t http://timestamp.digicert.com staging\NotAORM.dll
         shell: powershell
 
       - name: Package artifacts (only on tags)
